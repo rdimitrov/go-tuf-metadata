@@ -74,7 +74,7 @@ func main() {
 	// hash and length of this file at the local path. In addition, it specifies the
 	// 'target path', which a client uses to locate the target file relative to a
 	// configured mirror base URL.
-	// 	   |----base URL---||--------target path--------|
+	//     |----base URL---||--------target path--------|
 	// e.g. tuf-examples.org/examples/basic_repository.py
 	targetPath, localPath := helperGetPathForTarget("basic_repository.go")
 	targetFileInfo, err := metadata.TargetFile().FromFile(localPath, "sha256")
