@@ -66,7 +66,7 @@ func (trusted *TrustedMetadata) loadTrustedRoot(rootData []byte) error {
 	}
 	// save root if verified
 	trusted.Root = newRoot
-	log.Debugf("Loaded trusted root v", trusted.Root.Signed.Version)
+	log.Debugf("Loaded trusted root v%d", trusted.Root.Signed.Version)
 	return nil
 }
 
