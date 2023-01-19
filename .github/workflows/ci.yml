@@ -1,0 +1,11 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+    tags:
+      - "v*"
+name: CI
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
