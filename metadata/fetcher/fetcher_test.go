@@ -28,12 +28,15 @@ const (
 func TestDownloadFileWithExampleUrl(t *testing.T) {
 	fetcher := DefaultFetcher{httpUserAgent: ""}
 
+	fetcher.httpUserAgent = "someUserAgent"
+
 	data, err := fetcher.DownloadFile(exampleURL, 34)
 	if assert.NotNil(t, err) {
 		if assert.IsType(t, metadata.ErrDownloadHTTP{}, err) {
 			var checkErr metadata.ErrDownloadHTTP
 			if errors.As(err, &checkErr) {
-				assert.Equal(t, checkErr.StatusCode, 404)
+				assert.NotEqual(t, 200, checkErr.StatusCode)
+				assert.Equal(t, 404, checkErr.StatusCode)
 			}
 		}
 	}
