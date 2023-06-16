@@ -32,23 +32,32 @@ func SetupTestDirs() error {
 		log.Fatal("failed to create temporary directory: ", err)
 		return err
 	}
-	fmt.Println(TempDir)
 
 	RepoDir = fmt.Sprintf("%s/repository_data/repository", TempDir)
-	fs.Mkdir(RepoDir + "/metadata")
 	absPath, err := filepath.Abs("../testutils/repository_data/repository/metadata")
 	if err != nil {
 		log.Debugf("failed to get absolute path: %v", err)
 	}
-	fs.Copy(absPath, RepoDir)
+	err = fs.Copy(absPath, RepoDir)
+	if err != nil {
+		log.Debugf("failed to copy metadata to %s: %v", RepoDir, err)
+		return err
+	}
 
 	KeystoreDir = fmt.Sprintf("%s/keystore", TempDir)
-	fs.Mkdir(KeystoreDir)
+	err = fs.Mkdir(KeystoreDir)
+	if err != nil {
+		log.Debugf("failed to create keystore dir %s: %v", KeystoreDir, err)
+	}
 	absPath, err = filepath.Abs("../testutils/repository_data/keystore")
 	if err != nil {
 		log.Debugf("failed to get absolute path: %v", err)
 	}
-	fs.Copy(absPath, KeystoreDir)
+	err = fs.Copy(absPath, KeystoreDir)
+	if err != nil {
+		log.Debugf("failed to copy keystore to %s: %v", KeystoreDir, err)
+		return err
+	}
 
 	// TODO: load keys to keystore map
 
@@ -57,5 +66,8 @@ func SetupTestDirs() error {
 
 func Cleanup() {
 	log.Printf("cleaning temporary directory: %s\n", TempDir)
-	fs.RemoveAll(TempDir)
+	err := fs.RemoveAll(TempDir)
+	if err != nil {
+		log.Fatalf("failed to cleanup test directories: %v", err)
+	}
 }

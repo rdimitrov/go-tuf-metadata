@@ -34,7 +34,10 @@ func (*osFS) Mkdir(name string) error {
 }
 
 func (*osFS) Copy(fromPath string, toPath string) error {
-	os.MkdirAll(toPath, 0750)
+	err := os.MkdirAll(toPath, 0750)
+	if err != nil {
+		log.Debugf("failed to create directory %s: %v", toPath, err)
+	}
 	files, err := os.ReadDir(fromPath)
 	if err != nil {
 		log.Debugf("failed to read path %s: %v", fromPath, err)
