@@ -59,8 +59,6 @@ func SetupTestDirs() error {
 		return err
 	}
 
-	// TODO: load keys to keystore map
-
 	return nil
 }
 

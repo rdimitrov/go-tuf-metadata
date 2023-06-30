@@ -871,3 +871,12 @@ func checkType[T Roles](data []byte) error {
 	// all okay
 	return nil
 }
+
+func getSignatureByKeyID(signatures []Signature, keyID string) HexBytes {
+	for _, sig := range signatures {
+		if sig.KeyID == keyID {
+			return sig.Signature
+		}
+	}
+	return []byte{}
+}

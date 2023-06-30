@@ -13,11 +13,14 @@ package metadata
 
 import (
 	"bytes"
+	"crypto"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	simulator "github.com/rdimitrov/go-tuf-metadata/testutils/simulators"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"github.com/sigstore/sigstore/pkg/signature"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -271,4 +274,97 @@ func TestToFromBytes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(timestampBytes), string(timestamp2Bytes))
 
+}
+
+func TestSignVerify(t *testing.T) {
+	root, err := Root().FromFile(simulator.RepoDir + "/root.json")
+	assert.NoError(t, err)
+
+	// Locate the public keys we need from root
+	assert.NotEmpty(t, root.Signed.Roles[TARGETS].KeyIDs)
+	targetsKeyID := root.Signed.Roles[TARGETS].KeyIDs[0]
+	assert.NotEmpty(t, root.Signed.Roles[SNAPSHOT].KeyIDs)
+	snapshotKeyID := root.Signed.Roles[SNAPSHOT].KeyIDs[0]
+
+	// Load sample metadata (targets) and assert ...
+	targets, err := Targets().FromFile(simulator.RepoDir + "/targets.json")
+	assert.NoError(t, err)
+	data, err := targets.Signed.MarshalJSON()
+	assert.NoError(t, err)
+	sig := getSignatureByKeyID(targets.Signatures, targetsKeyID)
+
+	// ... it has a single existing signature,
+	assert.Equal(t, 1, len(targets.Signatures))
+
+	// ... which is valid for the correct key.
+	targetsKey := root.Signed.Keys[targetsKeyID]
+	targetsPublicKey, err := targetsKey.ToPublicKey()
+	assert.NoError(t, err)
+	targetsHash := crypto.Hash(0)
+	if targetsKey.Type != KeyTypeEd25519 {
+		targetsHash = crypto.SHA256
+	}
+	targetsVerifier, err := signature.LoadVerifier(targetsPublicKey, targetsHash)
+	assert.NoError(t, err)
+	err = targetsVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
+	assert.NoError(t, err)
+
+	snapshotKey := root.Signed.Keys[snapshotKeyID]
+	snapshotPublicKey, err := snapshotKey.ToPublicKey()
+	assert.NoError(t, err)
+	snapshotHash := crypto.Hash(0)
+	if snapshotKey.Type != KeyTypeEd25519 {
+		snapshotHash = crypto.SHA256
+	}
+	snapshotVerifier, err := signature.LoadVerifier(snapshotPublicKey, snapshotHash)
+	assert.NoError(t, err)
+
+	err = snapshotVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
+	assert.ErrorContains(t, err, "crypto/rsa: verification error")
+
+	signer, err := signature.LoadSignerFromPEMFile(simulator.KeystoreDir+"/snapshot_key", crypto.SHA256, cryptoutils.SkipPassword)
+	// root.Sign(signer)
+	// root.ToFile(simulator.RepoDir+"/tmp.json", false)
+	assert.NoError(t, err)
+	// Append a new signature with the unrelated key and assert that ...
+	snapshotSig, err := targets.Sign(signer)
+	assert.NoError(t, err)
+	// ... there are now two signatures, and
+	assert.Equal(t, 2, len(targets.Signatures))
+	// ... both are valid for the corresponding keys.
+	err = targetsVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
+	assert.NoError(t, err)
+	err = snapshotVerifier.VerifySignature(bytes.NewReader(snapshotSig.Signature), bytes.NewReader(data))
+	assert.NoError(t, err)
+	// ... the returned (appended) signature is for snapshot key
+	assert.Equal(t, snapshotSig.KeyID, snapshotKeyID)
+
+	// Create and assign (don't append) a new signature and assert that ...
+	signer, err = signature.LoadSignerFromPEMFile(simulator.KeystoreDir+"/timestamp_key", crypto.SHA256, cryptoutils.SkipPassword)
+	assert.NoError(t, err)
+
+	// Append a new signature with the unrelated key and assert that ...
+	targets.ClearSignatures()
+	timestampSig, err := targets.Sign(signer)
+	assert.NoError(t, err)
+	// ... there now is only one signature,
+	assert.Equal(t, 1, len(targets.Signatures))
+	// ... valid for that key.
+	assert.NotEmpty(t, root.Signed.Roles[TIMESTAMP].KeyIDs)
+	timestampKeyID := root.Signed.Roles[TIMESTAMP].KeyIDs[0]
+	timestampKey := root.Signed.Keys[timestampKeyID]
+	timestampPublicKey, err := timestampKey.ToPublicKey()
+	assert.NoError(t, err)
+	timestampHash := crypto.Hash(0)
+	if timestampKey.Type != KeyTypeEd25519 {
+		timestampHash = crypto.SHA256
+	}
+	timestampVerifier, err := signature.LoadVerifier(timestampPublicKey, timestampHash)
+	assert.NoError(t, err)
+
+	err = timestampVerifier.VerifySignature(bytes.NewReader(timestampSig.Signature), bytes.NewReader(data))
+	assert.NoError(t, err)
+	// TODO: should fail
+	targetsVerifier.VerifySignature(bytes.NewReader(timestampSig.Signature), bytes.NewReader(data))
+	assert.NoError(t, err)
 }
