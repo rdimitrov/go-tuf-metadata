@@ -1,4 +1,10 @@
 {
+	"signatures": [
+		{
+			"keyid": "d5fa855fce82db75ec64283e828cc90517df5edf5cdc57e7958a890d6556f5b7",
+			"sig": "1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
+		}
+	],
 	"signed": {
 		"_type": "root",
 		"consistent_snapshot": true,
@@ -62,11 +68,5 @@
 		"spec_version": "1.0.31",
 		"version": 1,
         "test": "true"
-	},
-	"signatures": [
-		{
-			"keyid": "d5fa855fce82db75ec64283e828cc90517df5edf5cdc57e7958a890d6556f5b7",
-			"sig": "1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
-		}
-	]
+	}
 }
