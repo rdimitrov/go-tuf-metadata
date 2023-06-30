@@ -9,10 +9,11 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-package simulator
+package testutils
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
@@ -25,9 +26,9 @@ var (
 )
 
 func SetupTestDirs() error {
-	tmp := fs.TempDir()
+	tmp := os.TempDir()
 	var err error
-	TempDir, err = fs.MkdirTemp(tmp, "0750")
+	TempDir, err = os.MkdirTemp(tmp, "0750")
 	if err != nil {
 		log.Fatal("failed to create temporary directory: ", err)
 		return err
@@ -38,14 +39,14 @@ func SetupTestDirs() error {
 	if err != nil {
 		log.Debugf("failed to get absolute path: %v", err)
 	}
-	err = fs.Copy(absPath, RepoDir)
+	err = Copy(absPath, RepoDir)
 	if err != nil {
 		log.Debugf("failed to copy metadata to %s: %v", RepoDir, err)
 		return err
 	}
 
 	KeystoreDir = fmt.Sprintf("%s/keystore", TempDir)
-	err = fs.Mkdir(KeystoreDir)
+	err = os.Mkdir(KeystoreDir, 0750)
 	if err != nil {
 		log.Debugf("failed to create keystore dir %s: %v", KeystoreDir, err)
 	}
@@ -53,7 +54,7 @@ func SetupTestDirs() error {
 	if err != nil {
 		log.Debugf("failed to get absolute path: %v", err)
 	}
-	err = fs.Copy(absPath, KeystoreDir)
+	err = Copy(absPath, KeystoreDir)
 	if err != nil {
 		log.Debugf("failed to copy keystore to %s: %v", KeystoreDir, err)
 		return err
@@ -62,9 +63,33 @@ func SetupTestDirs() error {
 	return nil
 }
 
+func Copy(fromPath string, toPath string) error {
+	err := os.MkdirAll(toPath, 0750)
+	if err != nil {
+		log.Debugf("failed to create directory %s: %v", toPath, err)
+	}
+	files, err := os.ReadDir(fromPath)
+	if err != nil {
+		log.Debugf("failed to read path %s: %v", fromPath, err)
+		return err
+	}
+	for _, file := range files {
+		data, err := os.ReadFile(fmt.Sprintf("%s/%s", fromPath, file.Name()))
+		if err != nil {
+			log.Debugf("failed to read file %s: %v", file.Name(), err)
+		}
+		filePath := fmt.Sprintf("%s/%s", toPath, file.Name())
+		err = os.WriteFile(filePath, data, 0750)
+		if err != nil {
+			log.Debugf("failed to write file %s: %v", filePath, err)
+		}
+	}
+	return nil
+}
+
 func Cleanup() {
 	log.Printf("cleaning temporary directory: %s\n", TempDir)
-	err := fs.RemoveAll(TempDir)
+	err := os.RemoveAll(TempDir)
 	if err != nil {
 		log.Fatalf("failed to cleanup test directories: %v", err)
 	}

@@ -16,9 +16,10 @@ import (
 	"crypto"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 
-	simulator "github.com/rdimitrov/go-tuf-metadata/testutils/simulators"
+	testutils "github.com/rdimitrov/go-tuf-metadata/testutils/testutils"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 	log "github.com/sirupsen/logrus"
@@ -27,8 +28,8 @@ import (
 
 func TestMain(m *testing.M) {
 
-	err := simulator.SetupTestDirs()
-	defer simulator.Cleanup()
+	err := testutils.SetupTestDirs()
+	defer testutils.Cleanup()
 
 	if err != nil {
 		log.Fatalf("failed to setup test dirs: %v", err)
@@ -48,8 +49,8 @@ func TestGenericRead(t *testing.T) {
 	_, err = Timestamp().FromBytes([]byte(badMetadata))
 	assert.ErrorContains(t, err, "expected metadata type timestamp, got - bad-metadata")
 
-	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", simulator.RepoDir)
-	err = simulator.CreateFile(badMetadataPath, []byte(badMetadata))
+	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", testutils.RepoDir)
+	err = os.WriteFile(badMetadataPath, []byte(badMetadata), 0644)
 	assert.NoError(t, err)
 	assert.FileExists(t, badMetadataPath)
 
@@ -62,26 +63,26 @@ func TestGenericRead(t *testing.T) {
 	_, err = Timestamp().FromFile(badMetadataPath)
 	assert.ErrorContains(t, err, "expected metadata type timestamp, got - bad-metadata")
 
-	err = simulator.DeleteFile(badMetadataPath)
+	err = os.RemoveAll(badMetadataPath)
 	assert.NoError(t, err)
 	assert.NoFileExists(t, badMetadataPath)
 }
 
 func TestMDReadWriteFileExceptions(t *testing.T) {
 	// Test writing to a file with bad filename
-	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", simulator.RepoDir)
+	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", testutils.RepoDir)
 	_, err := Root().FromFile(badMetadataPath)
 	assert.ErrorContains(t, err, fmt.Sprintf("open %s: no such file or directory", badMetadataPath))
 
 	// Test serializing to a file with bad filename
-	root, err := Root().FromFile(fmt.Sprintf("%s/root.json", simulator.RepoDir))
+	root, err := Root().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
 	assert.NoError(t, err)
 	err = root.ToFile("", false)
 	assert.ErrorContains(t, err, "no such file or directory")
 }
 
 func TestRootReadWriteReadCompare(t *testing.T) {
-	path1 := simulator.RepoDir + "/root.json"
+	path1 := testutils.RepoDir + "/root.json"
 	root1, err := Root().FromFile(path1)
 	assert.NoError(t, err)
 
@@ -98,12 +99,12 @@ func TestRootReadWriteReadCompare(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, bytes1, bytes2)
 
-	err = simulator.DeleteFile(path2)
+	err = os.RemoveAll(path2)
 	assert.NoError(t, err)
 }
 
 func TestSnapshotReadWriteReadCompare(t *testing.T) {
-	path1 := simulator.RepoDir + "/snapshot.json"
+	path1 := testutils.RepoDir + "/snapshot.json"
 	snaphot1, err := Snapshot().FromFile(path1)
 	assert.NoError(t, err)
 
@@ -120,12 +121,12 @@ func TestSnapshotReadWriteReadCompare(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, bytes1, bytes2)
 
-	err = simulator.DeleteFile(path2)
+	err = os.RemoveAll(path2)
 	assert.NoError(t, err)
 }
 
 func TestTargetsReadWriteReadCompare(t *testing.T) {
-	path1 := simulator.RepoDir + "/targets.json"
+	path1 := testutils.RepoDir + "/targets.json"
 	targets1, err := Targets().FromFile(path1)
 	assert.NoError(t, err)
 
@@ -142,12 +143,12 @@ func TestTargetsReadWriteReadCompare(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, bytes1, bytes2)
 
-	err = simulator.DeleteFile(path2)
+	err = os.RemoveAll(path2)
 	assert.NoError(t, err)
 }
 
 func TestTimestampReadWriteReadCompare(t *testing.T) {
-	path1 := simulator.RepoDir + "/timestamp.json"
+	path1 := testutils.RepoDir + "/timestamp.json"
 	timestamp1, err := Timestamp().FromFile(path1)
 	assert.NoError(t, err)
 
@@ -164,13 +165,13 @@ func TestTimestampReadWriteReadCompare(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, bytes1, bytes2)
 
-	err = simulator.DeleteFile(path2)
+	err = os.RemoveAll(path2)
 	assert.NoError(t, err)
 }
 
 func TestSerializeAndValidate(t *testing.T) {
 	// Assert that by changing one required attribute validation will fail.
-	root, err := Root().FromFile(simulator.RepoDir + "/root.json")
+	root, err := Root().FromFile(testutils.RepoDir + "/root.json")
 	assert.NoError(t, err)
 	root.Signed.Version = 0
 
@@ -192,7 +193,7 @@ func TrimBytes(data []byte) ([]byte, error) {
 
 func TestToFromBytes(t *testing.T) {
 	// ROOT
-	data, err := simulator.ReadFile(simulator.RepoDir + "/root.json")
+	data, err := os.ReadFile(testutils.RepoDir + "/root.json")
 	assert.NoError(t, err)
 	data, err = TrimBytes(data)
 	assert.NoError(t, err)
@@ -215,7 +216,7 @@ func TestToFromBytes(t *testing.T) {
 	assert.Equal(t, rootBytes, root2Bytes)
 
 	// SNAPSHOT
-	data, err = simulator.ReadFile(simulator.RepoDir + "/snapshot.json")
+	data, err = os.ReadFile(testutils.RepoDir + "/snapshot.json")
 	assert.NoError(t, err)
 	data, err = TrimBytes(data)
 	assert.NoError(t, err)
@@ -235,7 +236,7 @@ func TestToFromBytes(t *testing.T) {
 	assert.Equal(t, string(snapshotBytes), string(snapshot2Bytes))
 
 	// TARGETS
-	data, err = simulator.ReadFile(simulator.RepoDir + "/targets.json")
+	data, err = os.ReadFile(testutils.RepoDir + "/targets.json")
 	assert.NoError(t, err)
 	data, err = TrimBytes(data)
 	assert.NoError(t, err)
@@ -255,7 +256,7 @@ func TestToFromBytes(t *testing.T) {
 	assert.Equal(t, string(targetsBytes), string(targets2Bytes))
 
 	// TIMESTAMP
-	data, err = simulator.ReadFile(simulator.RepoDir + "/timestamp.json")
+	data, err = os.ReadFile(testutils.RepoDir + "/timestamp.json")
 	assert.NoError(t, err)
 	data, err = TrimBytes(data)
 	assert.NoError(t, err)
@@ -277,7 +278,7 @@ func TestToFromBytes(t *testing.T) {
 }
 
 func TestSignVerify(t *testing.T) {
-	root, err := Root().FromFile(simulator.RepoDir + "/root.json")
+	root, err := Root().FromFile(testutils.RepoDir + "/root.json")
 	assert.NoError(t, err)
 
 	// Locate the public keys we need from root
@@ -287,7 +288,7 @@ func TestSignVerify(t *testing.T) {
 	snapshotKeyID := root.Signed.Roles[SNAPSHOT].KeyIDs[0]
 
 	// Load sample metadata (targets) and assert ...
-	targets, err := Targets().FromFile(simulator.RepoDir + "/targets.json")
+	targets, err := Targets().FromFile(testutils.RepoDir + "/targets.json")
 	assert.NoError(t, err)
 	data, err := targets.Signed.MarshalJSON()
 	assert.NoError(t, err)
@@ -322,9 +323,7 @@ func TestSignVerify(t *testing.T) {
 	err = snapshotVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
 	assert.ErrorContains(t, err, "crypto/rsa: verification error")
 
-	signer, err := signature.LoadSignerFromPEMFile(simulator.KeystoreDir+"/snapshot_key", crypto.SHA256, cryptoutils.SkipPassword)
-	// root.Sign(signer)
-	// root.ToFile(simulator.RepoDir+"/tmp.json", false)
+	signer, err := signature.LoadSignerFromPEMFile(testutils.KeystoreDir+"/snapshot_key", crypto.SHA256, cryptoutils.SkipPassword)
 	assert.NoError(t, err)
 	// Append a new signature with the unrelated key and assert that ...
 	snapshotSig, err := targets.Sign(signer)
@@ -340,7 +339,7 @@ func TestSignVerify(t *testing.T) {
 	assert.Equal(t, snapshotSig.KeyID, snapshotKeyID)
 
 	// Create and assign (don't append) a new signature and assert that ...
-	signer, err = signature.LoadSignerFromPEMFile(simulator.KeystoreDir+"/timestamp_key", crypto.SHA256, cryptoutils.SkipPassword)
+	signer, err = signature.LoadSignerFromPEMFile(testutils.KeystoreDir+"/timestamp_key", crypto.SHA256, cryptoutils.SkipPassword)
 	assert.NoError(t, err)
 
 	// Append a new signature with the unrelated key and assert that ...
