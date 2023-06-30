@@ -16,6 +16,7 @@ import (
 	"crypto"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/sigstore/sigstore/pkg/signature"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sys/unix"
 )
 
 func TestMain(m *testing.M) {
@@ -41,13 +43,13 @@ func TestGenericRead(t *testing.T) {
 	// Assert that it chokes correctly on an unknown metadata type
 	badMetadata := "{\"signed\": {\"_type\": \"bad-metadata\"}}"
 	_, err := Root().FromBytes([]byte(badMetadata))
-	assert.ErrorContains(t, err, "expected metadata type root, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type root, got - bad-metadata"})
 	_, err = Snapshot().FromBytes([]byte(badMetadata))
-	assert.ErrorContains(t, err, "expected metadata type snapshot, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type snapshot, got - bad-metadata"})
 	_, err = Targets().FromBytes([]byte(badMetadata))
-	assert.ErrorContains(t, err, "expected metadata type targets, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type targets, got - bad-metadata"})
 	_, err = Timestamp().FromBytes([]byte(badMetadata))
-	assert.ErrorContains(t, err, "expected metadata type timestamp, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type timestamp, got - bad-metadata"})
 
 	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", testutils.RepoDir)
 	err = os.WriteFile(badMetadataPath, []byte(badMetadata), 0644)
@@ -55,13 +57,13 @@ func TestGenericRead(t *testing.T) {
 	assert.FileExists(t, badMetadataPath)
 
 	_, err = Root().FromFile(badMetadataPath)
-	assert.ErrorContains(t, err, "expected metadata type root, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type root, got - bad-metadata"})
 	_, err = Snapshot().FromFile(badMetadataPath)
-	assert.ErrorContains(t, err, "expected metadata type snapshot, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type snapshot, got - bad-metadata"})
 	_, err = Targets().FromFile(badMetadataPath)
-	assert.ErrorContains(t, err, "expected metadata type targets, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type targets, got - bad-metadata"})
 	_, err = Timestamp().FromFile(badMetadataPath)
-	assert.ErrorContains(t, err, "expected metadata type timestamp, got - bad-metadata")
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type timestamp, got - bad-metadata"})
 
 	err = os.RemoveAll(badMetadataPath)
 	assert.NoError(t, err)
@@ -72,13 +74,23 @@ func TestMDReadWriteFileExceptions(t *testing.T) {
 	// Test writing to a file with bad filename
 	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", testutils.RepoDir)
 	_, err := Root().FromFile(badMetadataPath)
-	assert.ErrorContains(t, err, fmt.Sprintf("open %s: no such file or directory", badMetadataPath))
+	expectedErr := fs.PathError{
+		Op:   "open",
+		Path: badMetadataPath,
+		Err:  unix.ENOENT,
+	}
+	assert.ErrorIs(t, err, expectedErr.Err)
 
 	// Test serializing to a file with bad filename
 	root, err := Root().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
 	assert.NoError(t, err)
 	err = root.ToFile("", false)
-	assert.ErrorContains(t, err, "no such file or directory")
+	expectedErr = fs.PathError{
+		Op:   "open",
+		Path: "",
+		Err:  unix.ENOENT,
+	}
+	assert.ErrorIs(t, err, expectedErr.Err)
 }
 
 func TestRootReadWriteReadCompare(t *testing.T) {
