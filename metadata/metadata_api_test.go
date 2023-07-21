@@ -14,7 +14,6 @@ package metadata
 import (
 	"bytes"
 	"crypto"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -70,6 +69,40 @@ func TestGenericRead(t *testing.T) {
 	assert.NoFileExists(t, badMetadataPath)
 }
 
+func TestGenericReadFromMismatchingRoles(t *testing.T) {
+	// Test failing to load other roles from root metadata
+	_, err := Snapshot().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type snapshot, got - root"})
+	_, err = Timestamp().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type timestamp, got - root"})
+	_, err = Targets().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type targets, got - root"})
+
+	// Test failing to load other roles from targets metadata
+	_, err = Snapshot().FromFile(fmt.Sprintf("%s/targets.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type snapshot, got - targets"})
+	_, err = Timestamp().FromFile(fmt.Sprintf("%s/targets.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type timestamp, got - targets"})
+	_, err = Root().FromFile(fmt.Sprintf("%s/targets.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type root, got - targets"})
+
+	// Test failing to load other roles from timestamp metadata
+	_, err = Snapshot().FromFile(fmt.Sprintf("%s/timestamp.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type snapshot, got - timestamp"})
+	_, err = Targets().FromFile(fmt.Sprintf("%s/timestamp.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type targets, got - timestamp"})
+	_, err = Root().FromFile(fmt.Sprintf("%s/timestamp.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type root, got - timestamp"})
+
+	// Test failing to load other roles from snapshot metadata
+	_, err = Targets().FromFile(fmt.Sprintf("%s/snapshot.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type targets, got - snapshot"})
+	_, err = Timestamp().FromFile(fmt.Sprintf("%s/snapshot.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type timestamp, got - snapshot"})
+	_, err = Root().FromFile(fmt.Sprintf("%s/snapshot.json", testutils.RepoDir))
+	assert.ErrorIs(t, err, ErrValue{"expected metadata type root, got - snapshot"})
+}
+
 func TestMDReadWriteFileExceptions(t *testing.T) {
 	// Test writing to a file with bad filename
 	badMetadataPath := fmt.Sprintf("%s/bad-metadata.json", testutils.RepoDir)
@@ -82,8 +115,7 @@ func TestMDReadWriteFileExceptions(t *testing.T) {
 	assert.ErrorIs(t, err, expectedErr.Err)
 
 	// Test serializing to a file with bad filename
-	root, err := Root().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
-	assert.NoError(t, err)
+	root := Root(fixedExpire)
 	err = root.ToFile("", false)
 	expectedErr = fs.PathError{
 		Op:   "open",
@@ -93,25 +125,59 @@ func TestMDReadWriteFileExceptions(t *testing.T) {
 	assert.ErrorIs(t, err, expectedErr.Err)
 }
 
+func TestCompareFromBytesFromFileToBytes(t *testing.T) {
+	rootBytesWant, err := os.ReadFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	root, err := Root().FromFile(fmt.Sprintf("%s/root.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	rootBytesActual, err := root.ToBytes(true)
+	assert.NoError(t, err)
+	assert.Equal(t, rootBytesWant, rootBytesActual)
+
+	targetsBytesWant, err := os.ReadFile(fmt.Sprintf("%s/targets.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	targets, err := Targets().FromFile(fmt.Sprintf("%s/targets.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	targetsBytesActual, err := targets.ToBytes(true)
+	assert.NoError(t, err)
+	assert.Equal(t, targetsBytesWant, targetsBytesActual)
+
+	snapshotBytesWant, err := os.ReadFile(fmt.Sprintf("%s/snapshot.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	snapshot, err := Snapshot().FromFile(fmt.Sprintf("%s/snapshot.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	snapshotBytesActual, err := snapshot.ToBytes(true)
+	assert.NoError(t, err)
+	assert.Equal(t, snapshotBytesWant, snapshotBytesActual)
+
+	timestampBytesWant, err := os.ReadFile(fmt.Sprintf("%s/timestamp.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	timestamp, err := Timestamp().FromFile(fmt.Sprintf("%s/timestamp.json", testutils.RepoDir))
+	assert.NoError(t, err)
+	timestampBytesActual, err := timestamp.ToBytes(true)
+	assert.NoError(t, err)
+	assert.Equal(t, timestampBytesWant, timestampBytesActual)
+}
+
 func TestRootReadWriteReadCompare(t *testing.T) {
-	path1 := testutils.RepoDir + "/root.json"
-	root1, err := Root().FromFile(path1)
+	src := testutils.RepoDir + "/root.json"
+	srcRoot, err := Root().FromFile(src)
 	assert.NoError(t, err)
 
-	path2 := path1 + ".tmp"
-	err = root1.ToFile(path2, false)
+	dst := src + ".tmp"
+	err = srcRoot.ToFile(dst, false)
 	assert.NoError(t, err)
 
-	root2, err := Root().FromFile(path2)
+	dstRoot, err := Root().FromFile(dst)
 	assert.NoError(t, err)
 
-	bytes1, err := root1.ToBytes(false)
+	srcBytes, err := srcRoot.ToBytes(false)
 	assert.NoError(t, err)
-	bytes2, err := root2.ToBytes(false)
+	dstBytes, err := dstRoot.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, bytes1, bytes2)
+	assert.Equal(t, srcBytes, dstBytes)
 
-	err = os.RemoveAll(path2)
+	err = os.RemoveAll(dst)
 	assert.NoError(t, err)
 }
 
@@ -181,33 +247,9 @@ func TestTimestampReadWriteReadCompare(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestSerializeAndValidate(t *testing.T) {
-	// Assert that by changing one required attribute validation will fail.
-	root, err := Root().FromFile(testutils.RepoDir + "/root.json")
-	assert.NoError(t, err)
-	root.Signed.Version = 0
-
-	_, err = root.ToBytes(false)
-	// TODO: refering to python-tuf, this should fail
-	assert.NoError(t, err)
-}
-
-func TrimBytes(data []byte) ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	err := json.Compact(buffer, data)
-	if err != nil {
-		log.Debugf("failed to trim bytes: %v", err)
-		return data, err
-	}
-	data = buffer.Bytes()
-	return data, nil
-}
-
 func TestToFromBytes(t *testing.T) {
 	// ROOT
 	data, err := os.ReadFile(testutils.RepoDir + "/root.json")
-	assert.NoError(t, err)
-	data, err = TrimBytes(data)
 	assert.NoError(t, err)
 	root, err := Root().FromBytes(data)
 	assert.NoError(t, err)
@@ -216,76 +258,70 @@ func TestToFromBytes(t *testing.T) {
 	// for two cases for the serializer: noncompact and compact.
 
 	// Case 1: test noncompact by overriding the default serializer.
-	rootBytes, err := root.ToBytes(false)
+	rootBytesWant, err := root.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, data, rootBytes)
+	assert.Equal(t, data, rootBytesWant)
 
 	// Case 2: test compact by using the default serializer.
-	root2, err := Root().FromBytes(rootBytes)
+	root2, err := Root().FromBytes(rootBytesWant)
 	assert.NoError(t, err)
-	root2Bytes, err := root2.ToBytes(false)
+	rootBytesActual, err := root2.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, rootBytes, root2Bytes)
+	assert.Equal(t, rootBytesWant, rootBytesActual)
 
 	// SNAPSHOT
 	data, err = os.ReadFile(testutils.RepoDir + "/snapshot.json")
-	assert.NoError(t, err)
-	data, err = TrimBytes(data)
 	assert.NoError(t, err)
 	snapshot, err := Snapshot().FromBytes(data)
 	assert.NoError(t, err)
 
 	// Case 1: test noncompact by overriding the default serializer.
-	snapshotBytes, err := snapshot.ToBytes(false)
+	snapshotBytesWant, err := snapshot.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(data), string(snapshotBytes))
+	assert.Equal(t, string(data), string(snapshotBytesWant))
 
 	// Case 2: test compact by using the default serializer.
-	snapshot2, err := Snapshot().FromBytes(snapshotBytes)
+	snapshot2, err := Snapshot().FromBytes(snapshotBytesWant)
 	assert.NoError(t, err)
-	snapshot2Bytes, err := snapshot2.ToBytes(false)
+	snapshotBytesActual, err := snapshot2.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(snapshotBytes), string(snapshot2Bytes))
+	assert.Equal(t, string(snapshotBytesWant), string(snapshotBytesActual))
 
 	// TARGETS
 	data, err = os.ReadFile(testutils.RepoDir + "/targets.json")
-	assert.NoError(t, err)
-	data, err = TrimBytes(data)
 	assert.NoError(t, err)
 	targets, err := Targets().FromBytes(data)
 	assert.NoError(t, err)
 
 	// Case 1: test noncompact by overriding the default serializer.
-	targetsBytes, err := targets.ToBytes(false)
+	targetsBytesWant, err := targets.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(data), string(targetsBytes))
+	assert.Equal(t, string(data), string(targetsBytesWant))
 
 	// Case 2: test compact by using the default serializer.
-	targets2, err := Targets().FromBytes(targetsBytes)
+	targets2, err := Targets().FromBytes(targetsBytesWant)
 	assert.NoError(t, err)
-	targets2Bytes, err := targets2.ToBytes(false)
+	targetsBytesActual, err := targets2.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(targetsBytes), string(targets2Bytes))
+	assert.Equal(t, string(targetsBytesWant), string(targetsBytesActual))
 
 	// TIMESTAMP
 	data, err = os.ReadFile(testutils.RepoDir + "/timestamp.json")
-	assert.NoError(t, err)
-	data, err = TrimBytes(data)
 	assert.NoError(t, err)
 	timestamp, err := Timestamp().FromBytes(data)
 	assert.NoError(t, err)
 
 	// Case 1: test noncompact by overriding the default serializer.
-	timestampBytes, err := timestamp.ToBytes(false)
+	timestampBytesWant, err := timestamp.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(data), string(timestampBytes))
+	assert.Equal(t, string(data), string(timestampBytesWant))
 
 	// Case 2: test compact by using the default serializer.
-	timestamp2, err := Timestamp().FromBytes(timestampBytes)
+	timestamp2, err := Timestamp().FromBytes(timestampBytesWant)
 	assert.NoError(t, err)
-	timestamp2Bytes, err := timestamp2.ToBytes(false)
+	timestampBytesActual, err := timestamp2.ToBytes(true)
 	assert.NoError(t, err)
-	assert.Equal(t, string(timestampBytes), string(timestamp2Bytes))
+	assert.Equal(t, string(timestampBytesWant), string(timestampBytesActual))
 
 }
 
@@ -298,13 +334,15 @@ func TestSignVerify(t *testing.T) {
 	targetsKeyID := root.Signed.Roles[TARGETS].KeyIDs[0]
 	assert.NotEmpty(t, root.Signed.Roles[SNAPSHOT].KeyIDs)
 	snapshotKeyID := root.Signed.Roles[SNAPSHOT].KeyIDs[0]
+	assert.NotEmpty(t, root.Signed.Roles[TIMESTAMP].KeyIDs)
+	timestampKeyID := root.Signed.Roles[TIMESTAMP].KeyIDs[0]
 
 	// Load sample metadata (targets) and assert ...
 	targets, err := Targets().FromFile(testutils.RepoDir + "/targets.json")
 	assert.NoError(t, err)
+	sig := getSignatureByKeyID(targets.Signatures, targetsKeyID)
 	data, err := targets.Signed.MarshalJSON()
 	assert.NoError(t, err)
-	sig := getSignatureByKeyID(targets.Signatures, targetsKeyID)
 
 	// ... it has a single existing signature,
 	assert.Equal(t, 1, len(targets.Signatures))
@@ -313,31 +351,25 @@ func TestSignVerify(t *testing.T) {
 	targetsKey := root.Signed.Keys[targetsKeyID]
 	targetsPublicKey, err := targetsKey.ToPublicKey()
 	assert.NoError(t, err)
-	targetsHash := crypto.Hash(0)
-	if targetsKey.Type != KeyTypeEd25519 {
-		targetsHash = crypto.SHA256
-	}
+	targetsHash := crypto.SHA256
 	targetsVerifier, err := signature.LoadVerifier(targetsPublicKey, targetsHash)
 	assert.NoError(t, err)
 	err = targetsVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
 	assert.NoError(t, err)
 
+	// ... and invalid for an unrelated key
 	snapshotKey := root.Signed.Keys[snapshotKeyID]
 	snapshotPublicKey, err := snapshotKey.ToPublicKey()
 	assert.NoError(t, err)
-	snapshotHash := crypto.Hash(0)
-	if snapshotKey.Type != KeyTypeEd25519 {
-		snapshotHash = crypto.SHA256
-	}
+	snapshotHash := crypto.SHA256
 	snapshotVerifier, err := signature.LoadVerifier(snapshotPublicKey, snapshotHash)
 	assert.NoError(t, err)
-
 	err = snapshotVerifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(data))
 	assert.ErrorContains(t, err, "crypto/rsa: verification error")
 
+	// Append a new signature with the unrelated key and assert that ...
 	signer, err := signature.LoadSignerFromPEMFile(testutils.KeystoreDir+"/snapshot_key", crypto.SHA256, cryptoutils.SkipPassword)
 	assert.NoError(t, err)
-	// Append a new signature with the unrelated key and assert that ...
 	snapshotSig, err := targets.Sign(signer)
 	assert.NoError(t, err)
 	// ... there are now two signatures, and
@@ -350,32 +382,25 @@ func TestSignVerify(t *testing.T) {
 	// ... the returned (appended) signature is for snapshot key
 	assert.Equal(t, snapshotSig.KeyID, snapshotKeyID)
 
-	// Create and assign (don't append) a new signature and assert that ...
+	// Clear all signatures and add a new signature with the unrelated key and assert that ...
 	signer, err = signature.LoadSignerFromPEMFile(testutils.KeystoreDir+"/timestamp_key", crypto.SHA256, cryptoutils.SkipPassword)
 	assert.NoError(t, err)
-
-	// Append a new signature with the unrelated key and assert that ...
 	targets.ClearSignatures()
+	assert.Equal(t, 0, len(targets.Signatures))
 	timestampSig, err := targets.Sign(signer)
 	assert.NoError(t, err)
 	// ... there now is only one signature,
 	assert.Equal(t, 1, len(targets.Signatures))
 	// ... valid for that key.
-	assert.NotEmpty(t, root.Signed.Roles[TIMESTAMP].KeyIDs)
-	timestampKeyID := root.Signed.Roles[TIMESTAMP].KeyIDs[0]
 	timestampKey := root.Signed.Keys[timestampKeyID]
 	timestampPublicKey, err := timestampKey.ToPublicKey()
 	assert.NoError(t, err)
-	timestampHash := crypto.Hash(0)
-	if timestampKey.Type != KeyTypeEd25519 {
-		timestampHash = crypto.SHA256
-	}
+	timestampHash := crypto.SHA256
 	timestampVerifier, err := signature.LoadVerifier(timestampPublicKey, timestampHash)
 	assert.NoError(t, err)
 
 	err = timestampVerifier.VerifySignature(bytes.NewReader(timestampSig.Signature), bytes.NewReader(data))
 	assert.NoError(t, err)
-	// TODO: should fail
-	targetsVerifier.VerifySignature(bytes.NewReader(timestampSig.Signature), bytes.NewReader(data))
-	assert.NoError(t, err)
+	err = targetsVerifier.VerifySignature(bytes.NewReader(timestampSig.Signature), bytes.NewReader(data))
+	assert.ErrorContains(t, err, "crypto/rsa: verification error")
 }

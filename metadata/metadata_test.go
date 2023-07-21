@@ -12,7 +12,6 @@
 package metadata
 
 import (
-	"crypto"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/json"
@@ -21,23 +20,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sigstore/sigstore/pkg/signature"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	testRootBytesWithUnrecognizedField         = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{},\"roles\":{\"root\":{\"keyids\":[],\"threshold\":1},\"snapshot\":{\"keyids\":[],\"threshold\":1},\"targets\":{\"keyids\":[],\"threshold\":1},\"timestamp\":{\"keyids\":[],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}")
-	testEmptyTargetsBytesWithUnrecognizedField = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"targets\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"spec_version\":\"1.0.31\",\"targets\":{},\"test\":\"true\",\"version\":1}}")
-	testSnapshotBytesWithUnrecognizedField     = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"snapshot\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"meta\":{\"targets.json\":{\"version\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}")
-	testTimestampBytesWithUnrecognizedField    = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"timestamp\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"meta\":{\"snapshot.json\":{\"version\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}")
-	testRootGenericMetadta                     = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{},\"roles\":{\"root\":{\"keyids\":[],\"threshold\":1},\"snapshot\":{\"keyids\":[],\"threshold\":1},\"targets\":{\"keyids\":[],\"threshold\":1},\"timestamp\":{\"keyids\":[],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"version\":1},\"test\":\"true\"}")
-	testTargetsFileCustomField                 = []byte("{\"signatures\":[],\"signed\":{\"_type\":\"targets\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"spec_version\":\"1.0.31\",\"targets\":{\"testTarget\":{\"custom\":{\"test\":true},\"hashes\":{},\"length\":0}},\"version\":1}}")
-	testRootBytes                              = []byte("{\"signatures\":[{\"keyid\":\"roothash\",\"sig\":\"1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee\"}],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{\"roothash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubrootval\"},\"scheme\":\"ed25519\"},\"snapshothash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubsval\"},\"scheme\":\"ed25519\"},\"targetshash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubtrval\"},\"scheme\":\"ed25519\"},\"timestamphash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubtmval\"},\"scheme\":\"ed25519\"}},\"roles\":{\"root\":{\"keyids\":[\"roothash\"],\"threshold\":1},\"snapshot\":{\"keyids\":[\"snapshothash\"],\"threshold\":1},\"targets\":{\"keyids\":[\"targetshash\"],\"threshold\":1},\"timestamp\":{\"keyids\":[\"timestamphash\"],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"version\":1}}")
-)
+var testRootBytes = []byte("{\"signatures\":[{\"keyid\":\"roothash\",\"sig\":\"1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee\"}],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{\"roothash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubrootval\"},\"scheme\":\"ed25519\"},\"snapshothash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubsval\"},\"scheme\":\"ed25519\"},\"targetshash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubtrval\"},\"scheme\":\"ed25519\"},\"timestamphash\":{\"keytype\":\"ed25519\",\"keyval\":{\"public\":\"pubtmval\"},\"scheme\":\"ed25519\"}},\"roles\":{\"root\":{\"keyids\":[\"roothash\"],\"threshold\":1},\"snapshot\":{\"keyids\":[\"snapshothash\"],\"threshold\":1},\"targets\":{\"keyids\":[\"targetshash\"],\"threshold\":1},\"timestamp\":{\"keyids\":[\"timestamphash\"],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"version\":1}}")
 
 const TEST_REPOSITORY_DATA = "../testutils/repository_data/repository/metadata"
 
 var fixedExpire = time.Date(2030, 8, 15, 14, 30, 45, 100, time.UTC)
+
+func getSignatureByKeyID(signatures []Signature, keyID string) HexBytes {
+	for _, sig := range signatures {
+		if sig.KeyID == keyID {
+			return sig.Signature
+		}
+	}
+	return []byte{}
+}
 
 func TestDefaultValuesRoot(t *testing.T) {
 	// without setting expiration
@@ -363,25 +362,25 @@ func TestUnrecognizedFieldRolesSigned(t *testing.T) {
 	root.Signed.UnrecognizedFields = testUnrecognizedField
 	rootJSON, err := root.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testRootBytesWithUnrecognizedField, rootJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{},\"roles\":{\"root\":{\"keyids\":[],\"threshold\":1},\"snapshot\":{\"keyids\":[],\"threshold\":1},\"targets\":{\"keyids\":[],\"threshold\":1},\"timestamp\":{\"keyids\":[],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}"), rootJSON)
 
 	targets := Targets(fixedExpire)
 	targets.Signed.UnrecognizedFields = testUnrecognizedField
 	targetsJSON, err := targets.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testEmptyTargetsBytesWithUnrecognizedField, targetsJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"targets\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"spec_version\":\"1.0.31\",\"targets\":{},\"test\":\"true\",\"version\":1}}"), targetsJSON)
 
 	snapshot := Snapshot(fixedExpire)
 	snapshot.Signed.UnrecognizedFields = testUnrecognizedField
 	snapshotJSON, err := snapshot.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testSnapshotBytesWithUnrecognizedField, snapshotJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"snapshot\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"meta\":{\"targets.json\":{\"version\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}"), snapshotJSON)
 
 	timestamp := Timestamp(fixedExpire)
 	timestamp.Signed.UnrecognizedFields = testUnrecognizedField
 	timestampJSON, err := timestamp.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testTimestampBytesWithUnrecognizedField, timestampJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"timestamp\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"meta\":{\"snapshot.json\":{\"version\":1}},\"spec_version\":\"1.0.31\",\"test\":\"true\",\"version\":1}}"), timestampJSON)
 }
 func TestUnrecognizedFieldGenericMetadata(t *testing.T) {
 	// fixed expire
@@ -395,7 +394,7 @@ func TestUnrecognizedFieldGenericMetadata(t *testing.T) {
 	root.UnrecognizedFields = testUnrecognizedField
 	rootJSON, err := root.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testRootGenericMetadta, rootJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"root\",\"consistent_snapshot\":true,\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"keys\":{},\"roles\":{\"root\":{\"keyids\":[],\"threshold\":1},\"snapshot\":{\"keyids\":[],\"threshold\":1},\"targets\":{\"keyids\":[],\"threshold\":1},\"timestamp\":{\"keyids\":[],\"threshold\":1}},\"spec_version\":\"1.0.31\",\"version\":1},\"test\":\"true\"}"), rootJSON)
 }
 func TestTargetFilesCustomField(t *testing.T) {
 	// custom JSON to test
@@ -413,7 +412,7 @@ func TestTargetFilesCustomField(t *testing.T) {
 	targets.Signed.Targets["testTarget"] = targetFile
 	targetsJSON, err := targets.ToBytes(false)
 	assert.NoError(t, err)
-	assert.Equal(t, testTargetsFileCustomField, targetsJSON)
+	assert.Equal(t, []byte("{\"signatures\":[],\"signed\":{\"_type\":\"targets\",\"expires\":\"2030-08-15T14:30:45.0000001Z\",\"spec_version\":\"1.0.31\",\"targets\":{\"testTarget\":{\"custom\":{\"test\":true},\"hashes\":{},\"length\":0}},\"version\":1}}"), targetsJSON)
 }
 
 func TestFromBytes(t *testing.T) {
@@ -566,22 +565,6 @@ func TestToFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoFileExists(t, fileName)
 
-}
-
-func TestSign(t *testing.T) {
-	_, key, err := ed25519.GenerateKey(nil)
-	assert.NoError(t, err)
-
-	signer, err := signature.LoadSigner(key, crypto.Hash(0))
-	assert.NoError(t, err)
-
-	root := Root(fixedExpire)
-	assert.Empty(t, root.Signatures)
-	sg, err := root.Sign(signer)
-	assert.NoError(t, err)
-
-	assert.NotEmpty(t, root.Signatures)
-	assert.Equal(t, sg, &root.Signatures[0])
 }
 
 func TestVerifyDelegate(t *testing.T) {
