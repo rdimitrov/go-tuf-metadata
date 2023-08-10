@@ -584,6 +584,11 @@ func (role *SuccinctRoles) GetRoles() []string {
 	return res
 }
 
+func (role *SuccinctRoles) GetSuffixLen() int {
+	numberOfBins := int(math.Pow(2, float64(role.BitLength)))
+	return len(strconv.FormatInt(int64(numberOfBins-1), 16))
+}
+
 // IsDelegatedRole returns whether the given roleName is in one of
 // the delegated roles that “SuccinctRoles“ represents
 func (role *SuccinctRoles) IsDelegatedRole(roleName string) bool {
