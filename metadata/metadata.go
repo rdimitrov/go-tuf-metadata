@@ -17,6 +17,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -514,7 +515,7 @@ func (role *DelegatedRole) IsDelegatedPath(targetFilepath string) (bool, error) 
 		// hash bin delegations - calculate the hash of the filepath to determine in which bin to find the target.
 		targetFilepathHash := sha256.Sum256([]byte(targetFilepath))
 		for _, pathHashPrefix := range role.PathHashPrefixes {
-			if strings.HasPrefix(string(targetFilepathHash[:]), pathHashPrefix) {
+			if strings.HasPrefix(base64.URLEncoding.EncodeToString(targetFilepathHash[:]), pathHashPrefix) {
 				return true, nil
 			}
 		}
