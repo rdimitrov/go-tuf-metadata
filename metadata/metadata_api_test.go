@@ -553,7 +553,8 @@ func TestMetadataVerifyDelegate(t *testing.T) {
 
 	// Add a key to snapshot role, make sure the new sig fails to verify
 	tsKeyID := root.Signed.Roles[TIMESTAMP].KeyIDs[0]
-	root.Signed.AddKey(root.Signed.Keys[tsKeyID], SNAPSHOT)
+	err = root.Signed.AddKey(root.Signed.Keys[tsKeyID], SNAPSHOT)
+	assert.NoError(t, err)
 	newSig := Signature{
 		KeyID:     tsKeyID,
 		Signature: []byte(strings.Repeat("ff", 64)),
@@ -625,12 +626,14 @@ func TestRootAddKeyAndRevokeKey(t *testing.T) {
 	assert.ErrorIs(t, err, ErrValue{"role nosuchrole doesn't exist"})
 
 	// Remove the key from root role (targets role still uses it)
-	root.Signed.RevokeKey(rootKey2.id, ROOT)
+	err = root.Signed.RevokeKey(rootKey2.id, ROOT)
+	assert.NoError(t, err)
 	assert.NotContains(t, root.Signed.Roles[ROOT].KeyIDs, rootKey2.id)
 	assert.Contains(t, root.Signed.Keys, rootKey2.id)
 
 	// Remove the key from targets as well
-	root.Signed.RevokeKey(rootKey2.id, TARGETS)
+	err = root.Signed.RevokeKey(rootKey2.id, TARGETS)
+	assert.NoError(t, err)
 	assert.NotContains(t, root.Signed.Roles[ROOT].KeyIDs, rootKey2.id)
 	assert.NotContains(t, root.Signed.Keys, rootKey2.id)
 
