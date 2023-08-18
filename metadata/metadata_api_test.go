@@ -541,7 +541,7 @@ func TestMetadataVerifyDelegate(t *testing.T) {
 	// (in this case signature is malformed)
 	keyID := root.Signed.Roles[SNAPSHOT].KeyIDs[0]
 	goodSig, idx := getSignatureByKeyID(snapshot.Signatures, keyID)
-	assert.NotEqual(t, -1, idx)
+	assert.NotEmpty(t, goodSig)
 	snapshot.Signatures[idx].Signature = []byte("foo")
 	err = root.VerifyDelegate(SNAPSHOT, snapshot)
 	assert.ErrorIs(t, err, ErrUnsignedMetadata{"Verifying snapshot failed, not enough signatures, got 0, want 1"})
@@ -945,7 +945,8 @@ func TestGetRolesInSuccinctRoles(t *testing.T) {
 	// bin names are in hex format and 4 hex digits are enough to represent
 	// all bins between 0 and 2^16 - 1 meaning suffix_len must be 4
 	expectedSuffixLength := 4
-	assert.Equal(t, expectedSuffixLength, succinctRoles.GetSuffixLen())
+	suffixLen, _ := succinctRoles.GetSuffixLen()
+	assert.Equal(t, expectedSuffixLength, suffixLen)
 
 	allRoles := succinctRoles.GetRoles()
 	for binNumer, roleName := range allRoles {

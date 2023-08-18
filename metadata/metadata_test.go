@@ -35,7 +35,7 @@ func getSignatureByKeyID(signatures []Signature, keyID string) (HexBytes, int) {
 			return sig.Signature, i
 		}
 	}
-	return []byte{}, -1
+	return []byte{}, 0
 }
 
 func TestDefaultValuesRoot(t *testing.T) {

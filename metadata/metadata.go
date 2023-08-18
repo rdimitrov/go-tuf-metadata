@@ -574,8 +574,7 @@ func (role *SuccinctRoles) GetRolesForTarget(targetFilepath string) map[string]b
 // GetRoles returns the names of all different delegated roles
 func (role *SuccinctRoles) GetRoles() []string {
 	res := []string{}
-	numberOfBins := int(math.Pow(2, float64(role.BitLength)))
-	suffixLen := len(strconv.FormatInt(int64(numberOfBins-1), 16))
+	suffixLen, numberOfBins := role.GetSuffixLen()
 
 	for binNumber := 0; binNumber < numberOfBins; binNumber++ {
 		suffix := fmt.Sprintf("%0*x", suffixLen, binNumber)
@@ -584,16 +583,15 @@ func (role *SuccinctRoles) GetRoles() []string {
 	return res
 }
 
-func (role *SuccinctRoles) GetSuffixLen() int {
+func (role *SuccinctRoles) GetSuffixLen() (int, int) {
 	numberOfBins := int(math.Pow(2, float64(role.BitLength)))
-	return len(strconv.FormatInt(int64(numberOfBins-1), 16))
+	return len(strconv.FormatInt(int64(numberOfBins-1), 16)), numberOfBins
 }
 
 // IsDelegatedRole returns whether the given roleName is in one of
 // the delegated roles that “SuccinctRoles“ represents
 func (role *SuccinctRoles) IsDelegatedRole(roleName string) bool {
-	numberOfBins := int64(math.Pow(2, float64(role.BitLength)))
-	suffixLen := len(strconv.FormatInt(int64(numberOfBins-1), 16))
+	suffixLen, numberOfBins := role.GetSuffixLen()
 
 	expectedPrefix := fmt.Sprintf("%s-", role.NamePrefix)
 
@@ -615,7 +613,7 @@ func (role *SuccinctRoles) IsDelegatedRole(roleName string) bool {
 	}
 
 	// check if the bin we calculated is indeed within the range of what we support
-	return (value >= 0) && (value < numberOfBins)
+	return (value >= 0) && (value < int64(numberOfBins))
 }
 
 // AddKey adds new signing key for delegated role "role"
