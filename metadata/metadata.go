@@ -680,23 +680,26 @@ func (signed *TargetsType) AddKey(key *Key, role string) error {
 				// add key if keyID is not already part of keyIDs for that role
 				if !slices.Contains(d.KeyIDs, key.ID()) {
 					signed.Delegations.Roles[i].KeyIDs = append(signed.Delegations.Roles[i].KeyIDs, key.ID())
-					signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
-					return nil
+				} else {
+					log.Debugf("Delegated role %s already has keyID %s", role, key.ID())
 				}
-				log.Debugf("Delegated role %s already has keyID %s", role, key.ID())
+				signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+				// all good
+				return nil
 			}
 		}
+		// error out since we haven't found an existing delegated role to add that key to
+		return ErrValue{Msg: fmt.Sprintf("delegated role %s doesn't exist", role)}
 	} else if signed.Delegations.SuccinctRoles != nil {
 		// add key if keyID is not already part of keyIDs for the SuccinctRoles role
 		if !slices.Contains(signed.Delegations.SuccinctRoles.KeyIDs, key.ID()) {
 			signed.Delegations.SuccinctRoles.KeyIDs = append(signed.Delegations.SuccinctRoles.KeyIDs, key.ID())
-			signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
-			return nil
+		} else {
+			log.Debugf("SuccinctRoles role already has keyID %s", key.ID())
 		}
-		log.Debugf("SuccinctRoles role already has keyID %s", key.ID())
-
 	}
-	return ErrValue{Msg: fmt.Sprintf("delegated role %s doesn't exist", role)}
+	signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+	return nil
 }
 
 // RevokeKey revokes key from delegated role "role" and updates the delegations key store
