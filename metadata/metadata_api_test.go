@@ -34,7 +34,9 @@ import (
 
 func TestMain(m *testing.M) {
 
-	err := testutils.SetupTestDirs()
+	repoPath := "../testutils/repository_data/repository/metadata"
+	keystorePath := "../testutils/repository_data/keystore"
+	err := testutils.SetupTestDirs(repoPath, keystorePath)
 	defer testutils.Cleanup()
 
 	if err != nil {
