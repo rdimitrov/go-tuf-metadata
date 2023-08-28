@@ -14,13 +14,14 @@ package fetcher
 import (
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 )
 
 // Fetcher interface
 type Fetcher interface {
-	DownloadFile(urlPath string, maxLength int64) ([]byte, error)
+	DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error)
 }
 
 // Default fetcher
@@ -28,9 +29,10 @@ type DefaultFetcher struct {
 	httpUserAgent string
 }
 
-// DownloadFile downloads a file from urlPath, errors out if it failed or its length is larger than maxLength
-func (d *DefaultFetcher) DownloadFile(urlPath string, maxLength int64) ([]byte, error) {
-	client := http.DefaultClient
+// DownloadFile downloads a file from urlPath, errors out if it failed,
+// its length is larger than maxLength or the timeout is reached
+func (d *DefaultFetcher) DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error) {
+	client := &http.Client{Timeout: timeout}
 	req, err := http.NewRequest("GET", urlPath, nil)
 	if err != nil {
 		return nil, err
