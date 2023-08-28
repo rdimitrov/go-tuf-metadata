@@ -415,7 +415,7 @@ func (update *Updater) loadRoot() error {
 	upperBound := lowerBound + update.cfg.MaxRootRotations
 
 	// loop until we find the latest available version of root (download -> verify -> load -> persist)
-	for nextVersion := lowerBound; nextVersion <= upperBound; nextVersion++ {
+	for nextVersion := lowerBound; nextVersion < upperBound; nextVersion++ {
 		data, err := update.downloadMetadata(metadata.ROOT, update.cfg.RootMaxLength, strconv.FormatInt(nextVersion, 10))
 		if err != nil {
 			// downloading the root metadata failed for some reason
