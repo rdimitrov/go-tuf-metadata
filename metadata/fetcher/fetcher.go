@@ -26,41 +26,41 @@ type Fetcher interface {
 	DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error)
 }
 
-// Default fetcher
+// DefaultFetcher implements Fetcher
 type DefaultFetcher struct {
 	httpUserAgent string
 }
 
 // DownloadFile downloads a file from urlPath, errors out if it failed,
-// its length is larger than maxLength or the timeout is reached
+// its length is larger than maxLength or the timeout is reached.
 func (d *DefaultFetcher) DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error) {
 	client := &http.Client{Timeout: timeout}
 	req, err := http.NewRequest("GET", urlPath, nil)
 	if err != nil {
 		return nil, err
 	}
-	// use in case of multiple sessions
+	// Use in case of multiple sessions.
 	if d.httpUserAgent != "" {
 		req.Header.Set("User-Agent", d.httpUserAgent)
 	}
-	// execute the request
+	// Execute the request.
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
-	// handle HTTP status codes
+	// Handle HTTP status codes.
 	if res.StatusCode == http.StatusNotFound || res.StatusCode == http.StatusForbidden || res.StatusCode != http.StatusOK {
 		return nil, metadata.ErrDownloadHTTP{StatusCode: res.StatusCode, URL: urlPath}
 	}
 	var length int64
-	// get content length from header (might not be accurate, -1 or not set)
+	// Get content length from header (might not be accurate, -1 or not set).
 	if header := res.Header.Get("Content-Length"); header != "" {
 		length, err = strconv.ParseInt(header, 10, 0)
 		if err != nil {
 			return nil, err
 		}
-		// error if the reported size is greater than what is expected
+		// Error if the reported size is greater than what is expected.
 		if length > maxLength {
 			return nil, metadata.ErrDownloadLengthMismatch{Msg: fmt.Sprintf("download failed for %s, length %d is larger than expected %d", urlPath, length, maxLength)}
 		}
@@ -73,7 +73,7 @@ func (d *DefaultFetcher) DownloadFile(urlPath string, maxLength int64, timeout t
 	if err != nil {
 		return nil, err
 	}
-	// error if the reported size is greater than what is expected
+	// Error if the reported size is greater than what is expected.
 	length = int64(len(data))
 	if length > maxLength {
 		return nil, metadata.ErrDownloadLengthMismatch{Msg: fmt.Sprintf("download failed for %s, length %d is larger than expected %d", urlPath, length, maxLength)}
