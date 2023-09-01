@@ -12,8 +12,10 @@
 package fetcher
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
@@ -51,18 +53,31 @@ func (d *DefaultFetcher) DownloadFile(urlPath string, maxLength int64, timeout t
 	if res.StatusCode == http.StatusNotFound || res.StatusCode == http.StatusForbidden || res.StatusCode != http.StatusOK {
 		return nil, metadata.ErrDownloadHTTP{StatusCode: res.StatusCode, URL: urlPath}
 	}
-	// TODO: handle content length correctly as we should not rely on the Content-Length header
-	// // get content length
-	// length, err := strconv.ParseInt(res.Header.Get("Content-Length"), 10, 0)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// // error if the reported size is greater than what is expected
-	// if length > maxLength {
-	// 	return nil, metadata.ErrDownloadLengthMismatch{Msg: fmt.Sprintf("download failed for %s, length %d is larger than expected %d", urlPath, length, maxLength)}
-	// }
-	// although the size has been checked above, use a LimitReader in case
+	var length int64
+	// get content length from header (might not be accurate, -1 or not set)
+	if header := res.Header.Get("Content-Length"); header != "" {
+		length, err = strconv.ParseInt(header, 10, 0)
+		if err != nil {
+			return nil, err
+		}
+		// error if the reported size is greater than what is expected
+		if length > maxLength {
+			return nil, metadata.ErrDownloadLengthMismatch{Msg: fmt.Sprintf("download failed for %s, length %d is larger than expected %d", urlPath, length, maxLength)}
+		}
+	}
+	// Although the size has been checked above, use a LimitReader in case
 	// the reported size is inaccurate, or size is -1 which indicates an
-	// unknown length
-	return io.ReadAll(io.LimitReader(res.Body, maxLength))
+	// unknown length. We read maxLength + 1 in order to check if the read data
+	// surpased our set limit.
+	data, err := io.ReadAll(io.LimitReader(res.Body, maxLength+1))
+	if err != nil {
+		return nil, err
+	}
+	// error if the reported size is greater than what is expected
+	length = int64(len(data))
+	if length > maxLength {
+		return nil, metadata.ErrDownloadLengthMismatch{Msg: fmt.Sprintf("download failed for %s, length %d is larger than expected %d", urlPath, length, maxLength)}
+	}
+
+	return data, nil
 }
