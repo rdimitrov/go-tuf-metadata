@@ -492,9 +492,9 @@ func (update *Updater) preOrderDepthFirstWalk(targetFilePath string) (*metadata.
 				childRolesToVisit = append(childRolesToVisit, roleParentTuple{Role: child, Parent: delegation.Role})
 				if terminating {
 					log.V(5).Info("Not backtracking to other roles")
+					delegationsToVisit = []roleParentTuple{}
+					break
 				}
-				delegationsToVisit = []roleParentTuple{}
-				break
 			}
 			// push childRolesToVisit in reverse order of appearance
 			// onto delegationsToVisit. Roles are popped from the end of
