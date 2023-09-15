@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/sigstore/sigstore/pkg/signature"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
@@ -28,12 +27,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log := metadata.GetLogger()
+
 	err := loadOrResetTrustedRootMetadata()
 	simulator.PastDateTime = time.Now().UTC().Truncate(24 * time.Hour).Add(-5 * 24 * time.Hour)
 
 	if err != nil {
 		simulator.RepositoryCleanup(simulator.MetadataDir)
-		log.Fatalf("failed to load TrustedRootMetadata: %v\n", err)
+		log.Error(err, "failed to load TrustedRootMetadata")
 	}
 
 	defer simulator.RepositoryCleanup(simulator.MetadataDir)
@@ -43,15 +44,17 @@ func TestMain(m *testing.M) {
 func loadOrResetTrustedRootMetadata() error {
 	var err error
 
+	log := metadata.GetLogger()
+
 	simulator.Sim, simulator.MetadataDir, testutils.TargetsDir, err = simulator.InitMetadataDir()
 	if err != nil {
-		log.Printf("failed to initialize metadata dir: %v", err)
+		log.Error(err, "failed to initialize metadata dir")
 		return err
 	}
 
 	simulator.RootBytes, err = simulator.GetRootBytes(simulator.MetadataDir)
 	if err != nil {
-		log.Printf("failed to load root bytes: %v", err)
+		log.Error(err, "failed to load root bytes")
 		return err
 	}
 	return nil
@@ -59,7 +62,7 @@ func loadOrResetTrustedRootMetadata() error {
 
 func loadUpdaterConfig() (*config.UpdaterConfig, error) {
 	updaterConfig, err := config.New(simulator.MetadataDir, simulator.RootBytes)
-	updaterConfig.Fetcher = simulator.Sim
+	updaterConfig.Fetcher = simulator.Sim.Fetcher
 	updaterConfig.LocalMetadataDir = simulator.MetadataDir
 	updaterConfig.LocalTargetsDir = testutils.TargetsDir
 	return updaterConfig, err
@@ -68,13 +71,15 @@ func loadUpdaterConfig() (*config.UpdaterConfig, error) {
 // runRefresh creates new Updater instance and
 // runs Refresh
 func runRefresh(updaterConfig *config.UpdaterConfig, moveInTime time.Time) (Updater, error) {
+	log := metadata.GetLogger()
+
 	if len(simulator.Sim.DumpDir) > 0 {
 		simulator.Sim.Write()
 	}
 
 	updater, err := New(updaterConfig)
 	if err != nil {
-		log.Debugf("failed to create new updater config: %v", err)
+		log.Error(err, "failed to create new updater config")
 		return Updater{}, err
 	}
 	if moveInTime != time.Now() {
@@ -85,13 +90,15 @@ func runRefresh(updaterConfig *config.UpdaterConfig, moveInTime time.Time) (Upda
 }
 
 func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
+	log := metadata.GetLogger()
+
 	if len(simulator.Sim.DumpDir) > 0 {
 		simulator.Sim.Write()
 	}
 
 	updater, err := New(updaterConfig)
 	if err != nil {
-		log.Debugf("failed to create new updater config: %v", err)
+		log.Error(err, "failed to create new updater config")
 	}
 	return *updater
 }

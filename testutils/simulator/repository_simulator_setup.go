@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rdimitrov/go-tuf-metadata/metadata"
 )
 
 var (
@@ -34,12 +34,13 @@ var (
 )
 
 func InitLocalEnv() error {
+	log := metadata.GetLogger()
 
 	tmp := os.TempDir()
 
 	tmpDir, err := os.MkdirTemp(tmp, "0750")
 	if err != nil {
-		log.Fatal("failed to create temporary directory: ", err)
+		log.Error(err, "failed to create temporary directory")
 	}
 
 	os.Mkdir(tmpDir+metadataPath, 0750)
@@ -49,9 +50,11 @@ func InitLocalEnv() error {
 }
 
 func InitMetadataDir() (*RepositorySimulator, string, string, error) {
+	log := metadata.GetLogger()
+
 	err := InitLocalEnv()
 	if err != nil {
-		log.Fatal("failed to initialize environment: ", err)
+		log.Error(err, "failed to initialize environment")
 	}
 	metadataDir := LocalDir + metadataPath
 
@@ -59,7 +62,7 @@ func InitMetadataDir() (*RepositorySimulator, string, string, error) {
 
 	f, err := os.Create(metadataDir + "/root.json")
 	if err != nil {
-		log.Fatalf("failed to create root: %v", err)
+		log.Error(err, "failed to create root")
 	}
 
 	f.Write(sim.SignedRoots[0])
@@ -73,6 +76,8 @@ func GetRootBytes(localMetadataDir string) ([]byte, error) {
 }
 
 func RepositoryCleanup(tmpDir string) {
-	log.Printf("Cleaning temporary directory: %s\n", tmpDir)
+	log := metadata.GetLogger()
+
+	log.V(4).Info("Cleaning temporary directory", tmpDir)
 	os.RemoveAll(tmpDir)
 }
