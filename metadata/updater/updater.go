@@ -557,6 +557,11 @@ func (update *Updater) downloadMetadata(roleName string, length int64, version s
 	} else {
 		urlPath = fmt.Sprintf("%s%s.%s.json", urlPath, version, url.QueryEscape(roleName))
 	}
+
+	if update.cfg.Fetcher == nil {
+		return []byte(""), fmt.Errorf("no valid fetcher found!")
+	}
+
 	return update.cfg.Fetcher.DownloadFile(urlPath, length, time.Second*15)
 }
 

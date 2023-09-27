@@ -54,8 +54,10 @@ func TestTopLevelRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 	simulator.Sim.PublishRoot()
 
 	updaterConfig, err := loadUpdaterConfig()
+	assert.NotNil(t, updaterConfig)
 	assert.NoError(t, err)
 	updater := initUpdater(t, updaterConfig)
+	assert.NotNil(t, updater)
 
 	// cleanup fetch tracker metadata
 	simulator.Sim.FetchTracker.Metadata = []simulator.FTMetadata{}
