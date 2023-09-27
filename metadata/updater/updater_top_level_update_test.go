@@ -89,8 +89,8 @@ func runRefresh(updaterConfig *config.UpdaterConfig, moveInTime time.Time) (Upda
 	return *updater, err
 }
 
-func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
-	log := metadata.GetLogger()
+func initUpdater(t *testing.T, updaterConfig *config.UpdaterConfig) Updater {
+	t.Helper()
 
 	if len(simulator.Sim.DumpDir) > 0 {
 		simulator.Sim.Write()
@@ -98,8 +98,9 @@ func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
 
 	updater, err := New(updaterConfig)
 	if err != nil {
-		log.Error(err, "failed to create new updater config")
+		t.Errorf("failed to create new updater config, reason %v", err)
 	}
+
 	return *updater
 }
 
@@ -222,7 +223,7 @@ func TestTrustedRootExpired(t *testing.T) {
 
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrExpiredMetadata{Msg: "final root.json is expired"})
 
@@ -230,7 +231,7 @@ func TestTrustedRootExpired(t *testing.T) {
 	version := 2
 	assertContentEquals(t, metadata.ROOT, &version)
 
-	updater = initUpdater(updaterConfig)
+	updater = initUpdater(t, updaterConfig)
 
 	simulator.Sim.MDRoot.Signed.Expires = simulator.Sim.SafeExpiry
 	simulator.Sim.MDRoot.Signed.Version += 1
@@ -280,7 +281,7 @@ func TestMaxRootRotations(t *testing.T) {
 
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 	updater.cfg.MaxRootRotations = 3
 
 	for simulator.Sim.MDRoot.Signed.Version < updater.cfg.MaxRootRotations+3 {
@@ -916,28 +917,28 @@ func TestMaxMetadataLengths(t *testing.T) {
 	// make sure going over any length limit raises DownloadLengthMismatchError
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 	updater.cfg.RootMaxLength = 100
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrDownloadLengthMismatch{Msg: "Downloaded 1567 bytes exceeding the maximum allowed length of 100"})
 
-	updater = initUpdater(updaterConfig)
+	updater = initUpdater(t, updaterConfig)
 	updater.cfg.TimestampMaxLength = 100
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrDownloadLengthMismatch{Msg: "Downloaded 1567 bytes exceeding the maximum allowed length of 100"})
 
-	updater = initUpdater(updaterConfig)
+	updater = initUpdater(t, updaterConfig)
 	updater.cfg.SnapshotMaxLength = 100
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrDownloadLengthMismatch{Msg: "Downloaded 1567 bytes exceeding the maximum allowed length of 100"})
 
-	updater = initUpdater(updaterConfig)
+	updater = initUpdater(t, updaterConfig)
 	updater.cfg.TargetsMaxLength = 100
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrDownloadLengthMismatch{Msg: "Downloaded 1567 bytes exceeding the maximum allowed length of 100"})
 
 	// All good with normal length limits
-	updater = initUpdater(updaterConfig)
+	updater = initUpdater(t, updaterConfig)
 	err = updater.Refresh()
 	assert.ErrorIs(t, err, metadata.ErrDownloadLengthMismatch{Msg: "Downloaded 1567 bytes exceeding the maximum allowed length of 100"})
 }

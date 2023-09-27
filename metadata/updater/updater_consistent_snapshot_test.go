@@ -55,7 +55,7 @@ func TestTopLevelRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 
 	// cleanup fetch tracker metadata
 	simulator.Sim.FetchTracker.Metadata = []simulator.FTMetadata{}
@@ -87,7 +87,7 @@ func TestTopLevelRolesUpdateWithConsistentSnapshotEnabled(t *testing.T) {
 
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 
 	// cleanup fetch tracker metadata
 	simulator.Sim.FetchTracker.Metadata = []simulator.FTMetadata{}
@@ -149,7 +149,7 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 	simulator.Sim.UpdateSnapshot()
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 
 	err = updater.Refresh()
 	assert.NoError(t, err)
@@ -213,7 +213,7 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotEnabled(t *testing.T) {
 	simulator.Sim.UpdateSnapshot()
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
-	updater := initUpdater(updaterConfig)
+	updater := initUpdater(t, updaterConfig)
 
 	err = updater.Refresh()
 	assert.NoError(t, err)
