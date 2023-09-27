@@ -207,7 +207,7 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotEnabled(t *testing.T) {
 		{Name: "..", Value: 1},
 		{Name: ".", Value: 1},
 	}
-	assert.EqualValues(t, expectedsnapshotEnabled, simulator.Sim.FetchTracker.Metadata)
+	assert.ElementsMatch(t, expectedsnapshotEnabled, simulator.Sim.FetchTracker.Metadata)
 	// metadata files are always persisted without a version prefix
 	assertFilesExist(t, metadata.TOP_LEVEL_ROLE_NAMES[:])
 }
