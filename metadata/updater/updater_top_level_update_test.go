@@ -228,7 +228,8 @@ func TestTrustedRootExpired(t *testing.T) {
 	simulator.Sim.MDRoot.Signed.Expires = simulator.Sim.SafeExpiry
 	simulator.Sim.MDRoot.Signed.Version += 1
 	simulator.Sim.PublishRoot()
-	updater.Refresh()
+	err = updater.Refresh()
+	assert.NoError(t, err)
 
 	assertFilesExist(t, metadata.TOP_LEVEL_ROLE_NAMES[:])
 	version = 3
@@ -246,7 +247,8 @@ func TestTrustedRootUnsigned(t *testing.T) {
 	assert.NoError(t, err)
 
 	mdRoot.ClearSignatures()
-	mdRoot.ToFile(rootPath, true)
+	err = mdRoot.ToFile(rootPath, true)
+	assert.NoError(t, err)
 	newRootBytes, err := os.ReadFile(rootPath)
 	assert.NoError(t, err)
 	simulator.RootBytes = newRootBytes
@@ -286,7 +288,8 @@ func TestMaxRootRotations(t *testing.T) {
 	assert.NoError(t, err)
 	initialRootVersion := mdRoot.Signed.Version
 
-	updater.Refresh()
+	err = updater.Refresh()
+	assert.NoError(t, err)
 
 	assertVersionEquals(t, metadata.ROOT, initialRootVersion+updaterConfig.MaxRootRotations)
 }

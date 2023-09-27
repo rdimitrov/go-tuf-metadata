@@ -42,8 +42,14 @@ func InitLocalEnv() error {
 		log.Fatal("failed to create temporary directory: ", err)
 	}
 
-	os.Mkdir(tmpDir+metadataPath, 0750)
-	os.Mkdir(tmpDir+targetsPath, 0750)
+	err = os.Mkdir(tmpDir+metadataPath, 0750)
+	if err != nil {
+		log.Debugf("repository simulator: failed to create dir: %v", err)
+	}
+	err = os.Mkdir(tmpDir+targetsPath, 0750)
+	if err != nil {
+		log.Debugf("repository simulator: failed to create dir: %v", err)
+	}
 	LocalDir = tmpDir
 	return nil
 }
@@ -62,7 +68,10 @@ func InitMetadataDir() (*RepositorySimulator, string, string, error) {
 		log.Fatalf("failed to create root: %v", err)
 	}
 
-	f.Write(sim.SignedRoots[0])
+	_, err = f.Write(sim.SignedRoots[0])
+	if err != nil {
+		log.Debugf("repository simulator setup: failed to write signed roots: %v", err)
+	}
 	targetsDir := LocalDir + targetsPath
 	sim.LocalDir = LocalDir
 	return sim, metadataDir, targetsDir, err

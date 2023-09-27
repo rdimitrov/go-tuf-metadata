@@ -12,36 +12,13 @@
 package updater
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	simulator "github.com/rdimitrov/go-tuf-metadata/testutils/simulator"
-	testutils "github.com/rdimitrov/go-tuf-metadata/testutils/testutils"
 )
-
-// Asserts that local files  with 'filenames' exist
-func assertTargetFilesExist(t *testing.T, filenames []string) {
-	expectedFiles := []string{}
-
-	for _, role := range filenames {
-		expectedFiles = append(expectedFiles, fmt.Sprintf("%s.json", role))
-	}
-	localMetadataFiles, err := os.ReadDir(testutils.TargetsDir)
-	assert.NoError(t, err)
-
-	actual := []string{}
-	for _, file := range localMetadataFiles {
-		actual = append(actual, file.Name())
-	}
-
-	for _, file := range expectedFiles {
-		assert.Contains(t, actual, file)
-	}
-}
 
 func TestTopLevelRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 	// Test if the client fetches and stores metadata files with the
