@@ -286,7 +286,7 @@ func partition(s string, delimiter string) (string, string) {
 	return version, role
 }
 
-func (rs *RepositorySimulator) DownloadFile(urlPath string, maxLength int64) ([]byte, error) {
+func (rs *RepositorySimulator) DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error) {
 	data, err := rs.fetch(urlPath)
 	if err != nil {
 		return data, err
