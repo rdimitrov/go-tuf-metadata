@@ -16,15 +16,31 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 	"github.com/stretchr/testify/assert"
 )
 
+// Copy of examples.WLogger to avoid import cycles
+type testLogger struct {
+	logr.Logger
+}
+
+// V returns an updated logger with the provided loglevel
+func (t testLogger) V(level int) Logger {
+	var cp logr.Logger
+	cp = t.Logger
+	cp = cp.V(level)
+
+	return testLogger{cp}
+}
+
 func TestSetLogger(t *testing.T) {
 	// This function is just a simple setter, no need for testing table
-	testLogger := stdr.New(stdlog.New(os.Stdout, "test", stdlog.LstdFlags))
-	SetLogger(testLogger)
-	assert.Equal(t, testLogger, log, "setting package global logger was unsuccessful")
+	tLogger := stdr.New(stdlog.New(os.Stdout, "test", stdlog.LstdFlags))
+	logger := testLogger{tLogger}
+	SetLogger(logger)
+	assert.Equal(t, logger, log, "setting package global logger was unsuccessful")
 }
 
 func TestGetLogger(t *testing.T) {

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/stdr"
+	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/trustedmetadata"
 	"github.com/spf13/cobra"
@@ -50,7 +51,10 @@ func init() {
 func InitializeCmd() error {
 	copyTrusted := true
 	// set logger and debug verbosity level
-	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags)))
+	var l = examples.WLogger{
+		Logger: stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags)),
+	}
+	metadata.SetLogger(l)
 	if Verbosity {
 		stdr.SetVerbosity(5)
 	}

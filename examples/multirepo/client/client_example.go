@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-logr/stdr"
 
+	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/config"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/multirepo"
@@ -34,7 +35,9 @@ const (
 
 func main() {
 	// set logger to stdout with info level
-	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "multirepo_client_example", stdlog.LstdFlags)))
+	metadata.SetLogger(examples.WLogger{
+		stdr.New(stdlog.New(os.Stdout, "multirepo_client_example", stdlog.LstdFlags)),
+	})
 	stdr.SetVerbosity(verbosity)
 
 	// Bootstrap TUF
