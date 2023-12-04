@@ -50,8 +50,7 @@ func init() {
 func InitializeCmd() error {
 	copyTrusted := true
 	// set logger and debug verbosity level
-	var l = stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags))
-	metadata.SetLogger(l)
+	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags)))
 	if Verbosity {
 		stdr.SetVerbosity(5)
 	}
