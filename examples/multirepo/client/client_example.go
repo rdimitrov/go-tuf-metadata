@@ -20,7 +20,6 @@ import (
 
 	"github.com/go-logr/stdr"
 
-	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/config"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/multirepo"
@@ -35,9 +34,7 @@ const (
 
 func main() {
 	// set logger to stdout with info level
-	metadata.SetLogger(examples.WLogger{
-		stdr.New(stdlog.New(os.Stdout, "multirepo_client_example", stdlog.LstdFlags)),
-	})
+	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "multirepo_client_example", stdlog.LstdFlags)))
 	stdr.SetVerbosity(verbosity)
 
 	// Bootstrap TUF
@@ -130,7 +127,7 @@ func BootstrapTUF() ([]byte, map[string][]byte, error) {
 			return nil, nil, fmt.Errorf("failed while finding a cached target: %w", err)
 		}
 		if path != "" {
-			log.V(4).Info("Target is already present", "target", name, "path", path)
+			log.Info("Target is already present", "target", name, "path", path)
 		}
 
 		// target is not present locally, so let's try to download it
@@ -155,7 +152,7 @@ func BootstrapTUF() ([]byte, map[string][]byte, error) {
 			repositoryName := strings.Split(name, string(os.PathSeparator))
 			trustedRoots[repositoryName[0]] = bytes
 		}
-		log.V(4).Info("Successfully downloaded target", "target", name, "path", path)
+		log.Info("Successfully downloaded target", "target", name, "path", path)
 	}
 
 	return mapBytes, trustedRoots, nil

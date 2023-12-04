@@ -17,7 +17,6 @@ import (
 	"os"
 
 	"github.com/go-logr/stdr"
-	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/spf13/cobra"
 )
@@ -38,9 +37,7 @@ func init() {
 
 func InitializeCmd() error {
 	// set logger and debug verbosity level
-	metadata.SetLogger(examples.WLogger{
-		stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags)),
-	})
+	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "ini_cmd", stdlog.LstdFlags)))
 	if Verbosity {
 		stdr.SetVerbosity(5)
 	}

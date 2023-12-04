@@ -26,15 +26,6 @@ type testLogger struct {
 	logr.Logger
 }
 
-// V returns an updated logger with the provided loglevel
-func (t testLogger) V(level int) Logger {
-	var cp logr.Logger
-	cp = t.Logger
-	cp = cp.V(level)
-
-	return testLogger{cp}
-}
-
 func TestSetLogger(t *testing.T) {
 	// This function is just a simple setter, no need for testing table
 	tLogger := stdr.New(stdlog.New(os.Stdout, "test", stdlog.LstdFlags))

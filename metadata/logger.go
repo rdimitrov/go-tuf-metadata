@@ -20,22 +20,14 @@ type Logger interface {
 	Info(msg string, kv ...any)
 	// Error logs an error with a given message and key/value pairs.
 	Error(err error, msg string, kv ...any)
-	// V returns a new logger with updated log level.
-	V(level int) Logger
 }
 
 type DiscardLogger struct{}
 
 func (d DiscardLogger) Info(msg string, kv ...any) {
-
 }
 
 func (d DiscardLogger) Error(err error, msg string, kv ...any) {
-
-}
-
-func (d DiscardLogger) V(l int) Logger {
-	return d
 }
 
 func SetLogger(logger Logger) {

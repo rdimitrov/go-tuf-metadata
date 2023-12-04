@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/stdr"
 
-	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/config"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/updater"
@@ -39,9 +38,7 @@ const (
 
 func main() {
 	// set logger to stdout with info level
-	metadata.SetLogger(examples.WLogger{
-		stdr.New(stdlog.New(os.Stdout, "client_example", stdlog.LstdFlags)),
-	})
+	metadata.SetLogger(stdr.New(stdlog.New(os.Stdout, "client_example", stdlog.LstdFlags)))
 	stdr.SetVerbosity(verbosity)
 
 	log := metadata.GetLogger()
@@ -176,7 +173,7 @@ func DownloadTarget(localMetadataDir, target string) error {
 		return fmt.Errorf("failed while finding a cached target: %w", err)
 	}
 	if path != "" {
-		log.V(4).Info("Target is already present", "target", target, "path", path)
+		log.Info("Target is already present", "target", target, "path", path)
 	}
 
 	// target is not present locally, so let's try to download it
@@ -185,7 +182,7 @@ func DownloadTarget(localMetadataDir, target string) error {
 		return fmt.Errorf("failed to download target file %s - %w", target, err)
 	}
 
-	log.V(4).Info("Successfully downloaded target", "target", target, "path", path)
+	log.Info("Successfully downloaded target", "target", target, "path", path)
 
 	return nil
 }

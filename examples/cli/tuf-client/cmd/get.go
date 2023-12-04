@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/stdr"
-	"github.com/rdimitrov/go-tuf-metadata/examples"
 	"github.com/rdimitrov/go-tuf-metadata/metadata"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/config"
 	"github.com/rdimitrov/go-tuf-metadata/metadata/updater"
@@ -57,9 +56,7 @@ func init() {
 
 func GetCmd(target string) error {
 	// set logger and debug verbosity level
-	var l = examples.WLogger{
-		Logger: stdr.New(stdlog.New(os.Stdout, "get_cmd", stdlog.LstdFlags)),
-	}
+	var l = stdr.New(stdlog.New(os.Stdout, "get_cmd", stdlog.LstdFlags))
 	metadata.SetLogger(l)
 	if Verbosity {
 		stdr.SetVerbosity(5)
