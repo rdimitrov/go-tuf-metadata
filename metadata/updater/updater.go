@@ -122,6 +122,50 @@ func (update *Updater) Refresh() error {
 	return nil
 }
 
+// UnsafeLoadMetadata tries to load the persisted metadata already cached
+// on disk. Note that this is an usafe function, and does deviate from the
+// TUF specification section 5.3 to 5.7 (update phases).
+// The metadata on disk are verified against the provided root though,
+// and expiration dates are verified.
+func (update *Updater) UnsafeLoadMetadata() error {
+	// Root is already loaded
+	// load timestamp
+	var p = filepath.Join(update.cfg.LocalMetadataDir, metadata.TIMESTAMP)
+	data, err := update.loadLocalMetadata(p)
+	if err != nil {
+		return err
+	}
+	_, err = update.trusted.UpdateTimestamp(data)
+	if err != nil {
+		return err
+	}
+
+	// load snapshot
+	p = filepath.Join(update.cfg.LocalMetadataDir, metadata.SNAPSHOT)
+	data, err = update.loadLocalMetadata(p)
+	if err != nil {
+		return err
+	}
+	_, err = update.trusted.UpdateSnapshot(data, false)
+	if err != nil {
+		return err
+	}
+
+	// targets
+	p = filepath.Join(update.cfg.LocalMetadataDir, metadata.TARGETS)
+	data, err = update.loadLocalMetadata(p)
+	if err != nil {
+		return err
+	}
+	// verify and load the new target metadata
+	_, err = update.trusted.UpdateDelegatedTargets(data, metadata.TARGETS, metadata.ROOT)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetTargetInfo returns metadata.TargetFiles instance with information
 // for targetPath. The return value can be used as an argument to
 // DownloadTarget() and FindCachedTarget().
