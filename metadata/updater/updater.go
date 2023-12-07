@@ -91,7 +91,7 @@ func New(config *config.UpdaterConfig) (*Updater, error) {
 	return updater, nil
 }
 
-// Refresh refreshes top-level metadata.
+// Refresh loads and possibly refreshes top-level metadata.
 // Downloads, verifies, and loads metadata for the top-level roles in the
 // specified order (root -> timestamp -> snapshot -> targets) implementing
 // all the checks required in the TUF client workflow.
@@ -102,7 +102,20 @@ func New(config *config.UpdaterConfig) (*Updater, error) {
 // that happens on demand during GetTargetInfo(). However, if the
 // repository uses consistent snapshots (ref. https://theupdateframework.github.io/specification/latest/#consistent-snapshots),
 // then all metadata downloaded by the Updater will use the same consistent repository state.
+//
+// If UnsafeLocalMode is set, no network interaction is performed, only
+// the cached files on disk are used. If the cached data is not complete,
+// this call will fail.
 func (update *Updater) Refresh() error {
+	if update.cfg.UnsafeLocalMode {
+		return update.unsafeLocalRefresh()
+	}
+	return update.onlineRefresh()
+}
+
+// onlineRefresh implements the TUF client workflow as described for
+// the Refresh function.
+func (update *Updater) onlineRefresh() error {
 	err := update.loadRoot()
 	if err != nil {
 		return err
@@ -122,12 +135,12 @@ func (update *Updater) Refresh() error {
 	return nil
 }
 
-// UnsafeLoadMetadata tries to load the persisted metadata already cached
+// unsafeLoadRefresh tries to load the persisted metadata already cached
 // on disk. Note that this is an usafe function, and does deviate from the
 // TUF specification section 5.3 to 5.7 (update phases).
 // The metadata on disk are verified against the provided root though,
 // and expiration dates are verified.
-func (update *Updater) UnsafeLoadMetadata() error {
+func (update *Updater) unsafeLocalRefresh() error {
 	// Root is already loaded
 	// load timestamp
 	var p = filepath.Join(update.cfg.LocalMetadataDir, metadata.TIMESTAMP)
