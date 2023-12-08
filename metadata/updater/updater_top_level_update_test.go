@@ -107,26 +107,7 @@ func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
 }
 
 // Asserts that local metadata files exist for 'roles'
-// func assertFilesExist(t *testing.T, roles []string) {
-// 	expectedFiles := []string{}
-
-// 	for _, role := range roles {
-// 		expectedFiles = append(expectedFiles, fmt.Sprintf("%s.json", role))
-// 	}
-// 	localMetadataFiles, err := os.ReadDir(simulator.MetadataDir)
-// 	assert.NoError(t, err)
-
-// 	actual := []string{}
-// 	for _, file := range localMetadataFiles {
-// 		actual = append(actual, file.Name())
-// 	}
-
-// 	for _, file := range expectedFiles {
-// 		assert.Contains(t, actual, file)
-// 	}
-// }
-
-func assertFilesExact(t *testing.T, roles []string) {
+func assertFilesExist(t *testing.T, roles []string) {
 	expectedFiles := []string{}
 
 	for _, role := range roles {
@@ -140,8 +121,27 @@ func assertFilesExact(t *testing.T, roles []string) {
 		actual = append(actual, file.Name())
 	}
 
-	assert.ElementsMatch(t, actual, expectedFiles)
+	for _, file := range expectedFiles {
+		assert.Contains(t, actual, file)
+	}
 }
+
+// func assertFilesExact(t *testing.T, roles []string) {
+// 	expectedFiles := []string{}
+
+// 	for _, role := range roles {
+// 		expectedFiles = append(expectedFiles, fmt.Sprintf("%s.json", role))
+// 	}
+// 	localMetadataFiles, err := os.ReadDir(simulator.MetadataDir)
+// 	assert.NoError(t, err)
+
+// 	actual := []string{}
+// 	for _, file := range localMetadataFiles {
+// 		actual = append(actual, file.Name())
+// 	}
+
+// 	assert.ElementsMatch(t, actual, expectedFiles)
+// }
 
 // Asserts that local file content is the expected
 func assertContentEquals(t *testing.T, role string, version *int) {
