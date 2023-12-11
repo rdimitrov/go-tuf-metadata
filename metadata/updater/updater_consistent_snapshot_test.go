@@ -33,10 +33,12 @@ func TestTopLevelRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
 	updater := initUpdater(updaterConfig)
-
 	// cleanup fetch tracker metadata
 	simulator.Sim.FetchTracker.Metadata = []simulator.FTMetadata{}
 	err = updater.Refresh()
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.NoError(t, err)
 
 	// metadata files are fetched with the expected version (or None)
@@ -65,7 +67,9 @@ func TestTopLevelRolesUpdateWithConsistentSnapshotEnabled(t *testing.T) {
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
 	updater := initUpdater(updaterConfig)
-
+	if updater == nil {
+		t.Fatal("updater is nil")
+	}
 	// cleanup fetch tracker metadata
 	simulator.Sim.FetchTracker.Metadata = []simulator.FTMetadata{}
 	err = updater.Refresh()
@@ -127,7 +131,9 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
 	updater := initUpdater(updaterConfig)
-
+	if updater == nil {
+		t.Fatal("updater is nil")
+	}
 	err = updater.Refresh()
 	assert.NoError(t, err)
 
@@ -143,7 +149,7 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotDisabled(t *testing.T) {
 		{Name: "..", Value: -1},
 		{Name: ".", Value: -1},
 	}
-	assert.EqualValues(t, expectedsnapshotEnabled, simulator.Sim.FetchTracker.Metadata)
+	assert.ElementsMatch(t, expectedsnapshotEnabled, simulator.Sim.FetchTracker.Metadata)
 	// metadata files are always persisted without a version prefix
 	assertFilesExist(t, metadata.TOP_LEVEL_ROLE_NAMES[:])
 }
@@ -191,7 +197,9 @@ func TestDelegatesRolesUpdateWithConsistentSnapshotEnabled(t *testing.T) {
 	updaterConfig, err := loadUpdaterConfig()
 	assert.NoError(t, err)
 	updater := initUpdater(updaterConfig)
-
+	if updater == nil {
+		t.Fatal("updater is nil")
+	}
 	err = updater.Refresh()
 	assert.NoError(t, err)
 

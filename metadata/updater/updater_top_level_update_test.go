@@ -14,6 +14,7 @@ package updater
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -93,7 +94,7 @@ func runRefresh(updaterConfig *config.UpdaterConfig, moveInTime time.Time) (Upda
 	return *updater, err
 }
 
-func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
+func initUpdater(updaterConfig *config.UpdaterConfig) *Updater {
 	if len(simulator.Sim.DumpDir) > 0 {
 		simulator.Sim.Write()
 	}
@@ -102,7 +103,7 @@ func initUpdater(updaterConfig *config.UpdaterConfig) Updater {
 	if err != nil {
 		log.Debugf("failed to create new updater config: %v", err)
 	}
-	return *updater
+	return updater
 }
 
 // Asserts that local metadata files exist for 'roles'
@@ -147,13 +148,13 @@ func assertContentEquals(t *testing.T, role string, version *int) {
 	expectedContent, err := simulator.Sim.FetchMetadata(role, version)
 	assert.NoError(t, err)
 
-	content, err := os.ReadFile(fmt.Sprintf("%s/%s.json", simulator.MetadataDir, role))
+	content, err := os.ReadFile(filepath.Join(simulator.MetadataDir, fmt.Sprintf("%s.json", role)))
 	assert.NoError(t, err)
 	assert.Equal(t, string(expectedContent), string(content))
 }
 
 func assertVersionEquals(t *testing.T, role string, expectedVersion int64) {
-	path := fmt.Sprintf("%s/%s.json", simulator.MetadataDir, role)
+	path := filepath.Join(simulator.MetadataDir, fmt.Sprintf("%s.json", role))
 	switch role {
 	case metadata.ROOT:
 		md, err := simulator.Sim.MDRoot.FromFile(path)
@@ -347,7 +348,7 @@ func TestTrustedRootUnsigned(t *testing.T) {
 	err := loadOrResetTrustedRootMetadata()
 	assert.NoError(t, err)
 
-	rootPath := fmt.Sprintf("%s/%s.json", simulator.MetadataDir, metadata.ROOT)
+	rootPath := filepath.Join(simulator.MetadataDir, fmt.Sprintf("%s.json", metadata.ROOT))
 	mdRoot, err := simulator.Sim.MDRoot.FromFile(rootPath)
 	assert.NoError(t, err)
 
@@ -388,7 +389,7 @@ func TestMaxRootRotations(t *testing.T) {
 		simulator.Sim.PublishRoot()
 	}
 
-	rootPath := fmt.Sprintf("%s/%s.json", simulator.MetadataDir, metadata.ROOT)
+	rootPath := filepath.Join(simulator.MetadataDir, fmt.Sprintf("%s.json", metadata.ROOT))
 	mdRoot, err := simulator.Sim.MDRoot.FromFile(rootPath)
 	assert.NoError(t, err)
 	initialRootVersion := mdRoot.Signed.Version
@@ -991,15 +992,15 @@ func TestExpiredMetadata(t *testing.T) {
 	// which means a successful refresh is performed
 	// with expired local metadata
 
-	mdTimestamp, err := metadata.Timestamp().FromFile(simulator.MetadataDir + "/timestamp.json")
+	mdTimestamp, err := metadata.Timestamp().FromFile(filepath.Join(simulator.MetadataDir, "timestamp.json"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), mdTimestamp.Signed.Version)
 
-	mdSnapshot, err := metadata.Snapshot().FromFile(simulator.MetadataDir + "/snapshot.json")
+	mdSnapshot, err := metadata.Snapshot().FromFile(filepath.Join(simulator.MetadataDir, "snapshot.json"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), mdSnapshot.Signed.Version)
 
-	mdTargets, err := metadata.Targets().FromFile(simulator.MetadataDir + "/targets.json")
+	mdTargets, err := metadata.Targets().FromFile(filepath.Join(simulator.MetadataDir, "targets.json"))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), mdTargets.Signed.Version)
 }
