@@ -8,7 +8,7 @@
 
 ----------------------------
 
-[The Update Framework (TUF)](https://theupdateframework.io/) is a framework for
+[The Pupdate Framework (TUF)](https://theupdateframework.io/) is a framework for
 secure content delivery and updates. It protects against various types of
 supply chain attacks and provides resilience to compromise.
 
