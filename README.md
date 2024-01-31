@@ -1,3 +1,16 @@
+----------------------------
+## Deprecation notice:
+
+The code base of this project got donated to https://github.com/theupdateframework/go-tuf where it replaced the existing implementation and is now being distributed under the v2 version. 
+
+That said take into account that I'll be archiving this repository in a few weeks so feel free to switch to https://github.com/theupdateframework/go-tuf/v2
+
+I'm happy to see how something that started as a PoC while being sick with COVID progressed to replacing the existing go-tuf code a year later. 
+
+Thanks to everyone that helped.
+
+----------------------------
+
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/rdimitrov/go-tuf-metadata/ci.yml?branch=main)
 [![codecov](https://codecov.io/github/rdimitrov/go-tuf-metadata/branch/main/graph/badge.svg?token=2ZUA68ZL13)](https://codecov.io/github/rdimitrov/go-tuf-metadata)
 [![Go Reference](https://pkg.go.dev/badge/github.com/rdimitrov/go-tuf-metadata.svg)](https://pkg.go.dev/github.com/rdimitrov/go-tuf-metadata)
